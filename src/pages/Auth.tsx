@@ -1,19 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { signInWithPopup } from 'firebase/auth';
-import { auth, googleProvider } from '../firebase';
 import api from '../utils/api';
-import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle } from 'lucide-react';
 
-// ─── Google SVG Icon ─────────────────────────────────────────────────────────
-const GoogleIcon = () => (
-    <svg className="w-5 h-5 mr-3 shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-    </svg>
-);
 
 // ─── Shared Error Banner ─────────────────────────────────────────────────────
 function ErrorBanner({ message }: { message: string }) {
@@ -40,7 +29,6 @@ export default function Auth() {
     const location = useLocation();
     const navigate = useNavigate();
     const [isLogin, setIsLogin] = useState(location.pathname === '/login');
-    const [googleLoading, setGoogleLoading] = useState(false);
 
     useEffect(() => {
         setIsLogin(location.pathname === '/login');
@@ -107,59 +95,6 @@ export default function Auth() {
         }
     };
 
-    // ── Google Sign-Up handler (Sign Up page only) ────────────────────────────
-    const handleGoogleSignUp = async (e: React.MouseEvent) => {
-        e.preventDefault();
-        setRegError('');
-        setGoogleLoading(true);
-        try {
-            const result = await signInWithPopup(auth, googleProvider);
-            const gUser = result.user;
-
-            // Sync with HEAL backend (upsert — creates account if new, logs in if existing)
-            let data: any;
-            try {
-                data = await api("/auth/google", {
-                    method: "POST",
-                    body: JSON.stringify({
-                        name: gUser.displayName,
-                        email: gUser.email,
-                        photoUrl: gUser.photoURL,
-                        googleId: gUser.uid,
-                        mobile: regMobile || null,
-                    }),
-                });
-            } catch {
-                // Backend might not have /auth/google yet — fall back to client-side session
-                data = {
-                    token: await gUser.getIdToken(),
-                    user: {
-                        name: gUser.displayName,
-                        email: gUser.email,
-                        photoUrl: gUser.photoURL,
-                        profileCompleted: false,
-                    },
-                };
-            }
-
-            localStorage.setItem("token", data.token);
-            localStorage.setItem("user", JSON.stringify(data.user));
-            navigate(data.user.profileCompleted ? '/dashboard' : '/dashboard');
-        } catch (err: any) {
-            // Gracefully handle common OAuth errors
-            if (err.code === 'auth/popup-closed-by-user') {
-                setRegError("The sign-in popup was closed. Please try again.");
-            } else if (err.code === 'auth/network-request-failed') {
-                setRegError("Network error. Please check your connection and try again.");
-            } else if (err.code === 'auth/cancelled-popup-request') {
-                // User opened another popup — silent ignore
-            } else {
-                setRegError(err.message || "Google sign-up failed. Please try again.");
-            }
-        } finally {
-            setGoogleLoading(false);
-        }
-    };
 
     // ─────────────────────────────────────────────────────────────────────────
     // Render
@@ -232,29 +167,6 @@ export default function Auth() {
 
                         <button type="submit" className="mt-4 w-full bg-[#FA5881] hover:bg-[#e0456c] text-white py-3.5 rounded-xl font-bold tracking-wider transition-colors shadow-md hover:shadow-lg">
                             Sign Up
-                        </button>
-
-                        {/* Divider */}
-                        <div className="w-full flex items-center my-1">
-                            <div className="flex-grow border-t border-gray-200"></div>
-                            <span className="px-3 text-sm text-gray-400">or</span>
-                            <div className="flex-grow border-t border-gray-200"></div>
-                        </div>
-
-                        {/* Continue with Google — Sign Up page ONLY */}
-                        <button
-                            onClick={handleGoogleSignUp}
-                            type="button"
-                            disabled={googleLoading}
-                            className="w-full bg-white border border-gray-300 hover:bg-gray-50 hover:border-[#FA5881] text-gray-700 py-3 rounded-xl flex items-center justify-center font-medium transition-all shadow-sm group disabled:opacity-60 disabled:cursor-not-allowed"
-                        >
-                            {googleLoading
-                                ? <Loader2 className="w-5 h-5 mr-3 animate-spin text-[#FA5881]" />
-                                : <GoogleIcon />
-                            }
-                            <span className="group-hover:text-[#FA5881] transition-colors">
-                                {googleLoading ? "Connecting..." : "Continue with Google"}
-                            </span>
                         </button>
                     </form>
                 </div>
@@ -341,27 +253,6 @@ export default function Auth() {
                                 </button>
                             </div>
                             <button type="submit" className="w-full mt-2 bg-[#FA5881] hover:bg-[#e0456c] text-white py-3.5 rounded-xl font-bold uppercase tracking-wider transition-all shadow-md">Sign Up</button>
-
-                            {/* Divider + Google — Sign Up only */}
-                            <div className="flex items-center my-3">
-                                <div className="flex-grow border-t border-gray-200"></div>
-                                <span className="px-3 text-sm text-gray-400">or</span>
-                                <div className="flex-grow border-t border-gray-200"></div>
-                            </div>
-                            <button
-                                onClick={handleGoogleSignUp}
-                                type="button"
-                                disabled={googleLoading}
-                                className="w-full bg-white border border-gray-300 text-gray-700 py-3 rounded-xl flex items-center justify-center font-medium shadow-sm transition-colors hover:border-[#FA5881] group disabled:opacity-60"
-                            >
-                                {googleLoading
-                                    ? <Loader2 className="w-5 h-5 mr-3 animate-spin text-[#FA5881]" />
-                                    : <GoogleIcon />
-                                }
-                                <span className="group-hover:text-[#FA5881] transition-colors">
-                                    {googleLoading ? "Connecting..." : "Continue with Google"}
-                                </span>
-                            </button>
                         </form>
                     )}
 
