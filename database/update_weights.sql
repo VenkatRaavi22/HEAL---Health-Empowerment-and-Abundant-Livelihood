@@ -1,0 +1,24 @@
+-- Data-Driven Weights Generated via Random Forest Analysis
+INSERT INTO diseases (disease_name) SELECT 'Endometriosis' WHERE NOT EXISTS (SELECT 1 FROM diseases WHERE disease_name='Endometriosis');
+DELETE FROM disease_symptom_weights;
+INSERT INTO disease_symptom_weights (disease_id, symptom_id, weight) VALUES ((SELECT disease_id FROM diseases WHERE disease_name='PCOS'), 6, 1);
+INSERT INTO disease_symptom_weights (disease_id, symptom_id, weight) VALUES ((SELECT disease_id FROM diseases WHERE disease_name='PCOS'), 5, 1);
+INSERT INTO disease_symptom_weights (disease_id, symptom_id, weight) VALUES ((SELECT disease_id FROM diseases WHERE disease_name='PCOS'), 4, 1);
+INSERT INTO disease_symptom_weights (disease_id, symptom_id, weight) VALUES ((SELECT disease_id FROM diseases WHERE disease_name='PCOS'), 3, 1);
+INSERT INTO disease_symptom_weights (disease_id, symptom_id, weight) VALUES ((SELECT disease_id FROM diseases WHERE disease_name='PCOS'), 11, 1);
+INSERT INTO disease_symptom_weights (disease_id, symptom_id, weight) VALUES ((SELECT disease_id FROM diseases WHERE disease_name='PCOS'), 10, 1);
+INSERT INTO disease_symptom_weights (disease_id, symptom_id, weight) VALUES ((SELECT disease_id FROM diseases WHERE disease_name='PCOS'), 12, 1);
+INSERT INTO disease_symptom_weights (disease_id, symptom_id, weight) VALUES ((SELECT disease_id FROM diseases WHERE disease_name='PCOS'), 16, 1);
+INSERT INTO disease_symptom_weights (disease_id, symptom_id, weight) VALUES ((SELECT disease_id FROM diseases WHERE disease_name='PCOS'), 17, 1);
+INSERT INTO disease_symptom_weights (disease_id, symptom_id, weight) VALUES ((SELECT disease_id FROM diseases WHERE disease_name='Thyroid'), 8, 21);
+INSERT INTO disease_symptom_weights (disease_id, symptom_id, weight) VALUES ((SELECT disease_id FROM diseases WHERE disease_name='Thyroid'), 6, 21);
+INSERT INTO disease_symptom_weights (disease_id, symptom_id, weight) VALUES ((SELECT disease_id FROM diseases WHERE disease_name='Thyroid'), 7, 21);
+INSERT INTO disease_symptom_weights (disease_id, symptom_id, weight) VALUES ((SELECT disease_id FROM diseases WHERE disease_name='Thyroid'), 4, 18);
+INSERT INTO disease_symptom_weights (disease_id, symptom_id, weight) VALUES ((SELECT disease_id FROM diseases WHERE disease_name='Thyroid'), 13, 22);
+INSERT INTO disease_symptom_weights (disease_id, symptom_id, weight) VALUES ((SELECT disease_id FROM diseases WHERE disease_name='Thyroid'), 14, 22);
+INSERT INTO disease_symptom_weights (disease_id, symptom_id, weight) VALUES ((SELECT disease_id FROM diseases WHERE disease_name='Thyroid'), 11, 16);
+INSERT INTO disease_symptom_weights (disease_id, symptom_id, weight) VALUES ((SELECT disease_id FROM diseases WHERE disease_name='Thyroid'), 10, 16);
+INSERT INTO disease_symptom_weights (disease_id, symptom_id, weight) VALUES ((SELECT disease_id FROM diseases WHERE disease_name='Endometriosis'), 1, 1);
+INSERT INTO disease_symptom_weights (disease_id, symptom_id, weight) VALUES ((SELECT disease_id FROM diseases WHERE disease_name='Endometriosis'), 18, 1);
+INSERT INTO disease_symptom_weights (disease_id, symptom_id, weight) VALUES ((SELECT disease_id FROM diseases WHERE disease_name='Endometriosis'), 16, 99);
+INSERT INTO disease_symptom_weights (disease_id, symptom_id, weight) VALUES ((SELECT disease_id FROM diseases WHERE disease_name='Endometriosis'), 15, 99);

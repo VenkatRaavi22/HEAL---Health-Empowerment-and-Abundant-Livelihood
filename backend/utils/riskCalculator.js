@@ -1,10 +1,9 @@
 const db = require("../config/db");
 
-// Total number of defined PCOD-related symptoms in the system
-const TOTAL_PCOD_SYMPTOMS = 12;
-
+// Data-driven approach uses dynamic max_score per disease from DB
 // Base risk (%) granted simply for having a known condition selected in Setup
-const BASE_RISK_FOR_KNOWN_CONDITION = 40;
+// Reduced to 0 so the risk can be highly dynamic and fall to 'Low' if no symptoms are logged.
+const BASE_RISK_FOR_KNOWN_CONDITION = 0;
 
 /**
  * Clamps a value to [0, 100] and rounds it.
@@ -81,9 +80,10 @@ const matchesKnownCondition = (diseaseName, knownCondition) => {
  *
  * @param {Array}  symptomIds - Array of logged symptom IDs.
  * @param {number} userId     - ID of the current user.
+ * @param {Object} logData    - Optional health log data containing stress_level, sleep_hours, weight.
  * @returns {Promise<Array>}  - Array of { disease, riskPercentage } objects.
  */
-const calculateRisk = async (symptomIds, userId = null) => {
+const calculateRisk = async (symptomIds, userId = null, logData = null) => {
     const hasSymptoms = symptomIds && symptomIds.length > 0;
 
     // Fetch profile data once (known condition + cycle irregularity) in parallel
@@ -136,23 +136,24 @@ const calculateRisk = async (symptomIds, userId = null) => {
             // 40-pt base from known condition; 0 otherwise
             const baseRisk = isKnown ? BASE_RISK_FOR_KNOWN_CONDITION : 0;
 
-            let symptomRisk; // symptom contribution
+            // Standard ratio-based normalization for all diseases based on data-driven weights
+            const rawRatio = Math.min(row.obtained_score / maxScore, 1);
+            
+            // Add a slight penalty for cycle irregularity for reproductive conditions
+            const cyclePenalty = (isCycleIrregular && (diseaseName.includes("pcos") || diseaseName.includes("pcod") || diseaseName.includes("endometriosis"))) ? 15 : 0;
+            
+            symptomRisk = (rawRatio * 100);
+            symptomRisk = Math.min(symptomRisk + cyclePenalty, 100);
 
-            if (diseaseName === "pcod" || diseaseName === "pcos" || diseaseName === "polycystic ovarian disease") {
-                // PCOD weighted formula: 70% symptom ratio + 30% cycle irregularity
-                const matchedCount = symptomIds.length;
-                const symptomRatio = Math.min(matchedCount / TOTAL_PCOD_SYMPTOMS, 1);
-                const rawSymptomScore = (symptomRatio * 70) + (isCycleIrregular ? 30 : 0); // 0–100
-                // When a base risk applies, scale symptom contribution into the remaining 60-pt budget
-                symptomRisk = isKnown ? (rawSymptomScore / 100) * 60 : rawSymptomScore;
-            } else {
-                // Standard ratio-based normalization for Thyroid, Endometriosis, etc.
-                const rawRatio = Math.min(row.obtained_score / maxScore, 1);
-                // Scale symptom contribution into the 60-pt budget only when base risk applies
-                symptomRisk = isKnown ? rawRatio * 60 : rawRatio * 100;
+            // Apply lifestyle penalty
+            let lifestylePenalty = 0;
+            if (logData) {
+                if (logData.stress_level > 7) lifestylePenalty += 5;
+                if (logData.sleep_hours && logData.sleep_hours < 6) lifestylePenalty += 5;
+                if (logData.mood && logData.mood.toLowerCase() === 'low') lifestylePenalty += 5;
             }
 
-            riskMap[row.disease_name] = clamp(baseRisk + symptomRisk);
+            riskMap[row.disease_name] = clamp(baseRisk + symptomRisk + lifestylePenalty);
         }
 
         // 5. Build final list — diseases with no symptom match still get base risk if known

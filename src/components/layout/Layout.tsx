@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Heart, User, LogOut, Menu, X } from 'lucide-react';
+import { Heart, User, LogOut, Menu, X, CalendarDays } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { motion } from 'framer-motion';
 
@@ -15,6 +15,23 @@ export function Layout({ children }: { children: React.ReactNode }) {
     const normalizedPath = location.pathname.toLowerCase();
     const isSession = normalizedPath.includes('/session');
     const isAuthPage = ['/login', '/register', '/'].some(p => normalizedPath === p || normalizedPath === p + '/');
+
+    // Real-time date
+    const [currentDate, setCurrentDate] = React.useState('');
+    React.useEffect(() => {
+        const updateDate = () => {
+            const dateStr = new Date().toLocaleDateString('en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric'
+            });
+            setCurrentDate(dateStr);
+        };
+        updateDate();
+        // Update everyday at midnight (or every hour to be safe)
+        const intervalId = setInterval(updateDate, 3600000);
+        return () => clearInterval(intervalId);
+    }, []);
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-[#FAEEEE] to-[#F8ECEB] font-sans text-[#0F172A]">
@@ -49,6 +66,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
                             {!isAuthPage && (
                                 <div className="flex items-center gap-4">
+                                    {/* Real time current day date tab */}
+                                    <div className="hidden sm:flex items-center gap-2 bg-gray-50 border border-gray-100 px-4 py-1.5 rounded-full shadow-sm">
+                                        <CalendarDays className="w-4 h-4 text-primary" />
+                                        <span className="text-sm font-semibold text-gray-700">{currentDate}</span>
+                                    </div>
                                     <Button variant="ghost" className="p-2 rounded-full hover:bg-gray-100 transition-colors" onClick={() => navigate('/profile')}>
                                         <User className="w-5 h-5 text-gray-600" />
                                     </Button>

@@ -47,13 +47,20 @@ exports.getRecommendationsByDisease = async (req, res) => {
             [diseaseName, riskLevel]
         );
 
-        // 6. Group recommendations by category
+        // 6. Group recommendations by category and introduce a daily cyclic selection
         const grouped = {
             yoga: [],
             exercise: [],
             diet: [],
             ayurveda: []
         };
+
+        // Determine a daily seed (day of year)
+        const now = new Date();
+        const start = new Date(now.getFullYear(), 0, 0);
+        const diff = (now.getTime() - start.getTime()) + ((start.getTimezoneOffset() - now.getTimezoneOffset()) * 60 * 1000);
+        const oneDay = 1000 * 60 * 60 * 24;
+        const dayOfYear = Math.floor(diff / oneDay);
 
         recoRows.forEach(row => {
             if (grouped[row.category]) {
@@ -62,6 +69,16 @@ exports.getRecommendationsByDisease = async (req, res) => {
                     description: row.description,
                     image_url: row.image_url
                 });
+            }
+        });
+
+        // Pick a subset of recommendations based on the day of the year to keep it dynamic
+        Object.keys(grouped).forEach(cat => {
+            if (grouped[cat].length > 2) {
+                // Shift array based on day of year, pick first 2
+                const shiftIndex = dayOfYear % grouped[cat].length;
+                const cycled = [...grouped[cat].slice(shiftIndex), ...grouped[cat].slice(0, shiftIndex)];
+                grouped[cat] = cycled.slice(0, 2);
             }
         });
 

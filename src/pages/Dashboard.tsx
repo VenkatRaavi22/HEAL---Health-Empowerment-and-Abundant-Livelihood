@@ -89,6 +89,16 @@ const slideRightVariants: any = {
     show: { opacity: 1, x: 0, transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] } }
 };
 
+const MENU_ITEMS = [
+    { icon: PenLine, label: "Log Health", to: "/log-health", color: "text-orange-500" },
+    { icon: CalendarDays, label: "Cycle Monitor", to: "/cycle", color: "text-pink-500" },
+    { icon: TrendingUp, label: "Progress Analytics", to: "/progress", color: "text-blue-500" },
+    { icon: Lightbulb, label: "Recommendations", to: "/recommendations", color: "text-teal-500" },
+    { icon: Pill, label: "Medication", to: "/medication", color: "text-sky-500" },
+    { icon: Stethoscope, label: "Consult Specialist", to: "/specialists", color: "text-amber-500" },
+    { icon: Bot, label: "AI Health Assistant", to: "/chatbot", color: "text-indigo-500" }
+];
+
 // Sidebar Menu Item Component
 function SidebarItem({ icon: Icon, label, to, color }: { icon: any, label: string, to: string, color: string }) {
     return (
@@ -103,6 +113,11 @@ export default function Dashboard() {
     const [risks, setRisks] = React.useState<any[]>([]);
     const [loading, setLoading] = React.useState(true);
     const [userName, setUserName] = React.useState("");
+    const [searchTerm, setSearchTerm] = React.useState("");
+
+    const filteredItems = MENU_ITEMS.filter(item =>
+        item.label.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     React.useEffect(() => {
         // Fetch User
@@ -143,6 +158,8 @@ export default function Dashboard() {
                     <input 
                         type="text" 
                         placeholder="Search" 
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full bg-[#f1f3f5]/80 border border-transparent rounded-[14px] py-2 pl-10 pr-4 text-[15px] focus:outline-none focus:ring-2 focus:ring-[#FA5881]/20 focus:bg-white transition-all text-gray-800 placeholder:text-gray-500 font-medium"
                     />
                 </div>
@@ -151,13 +168,15 @@ export default function Dashboard() {
                 <div>
                     <h2 className="text-[15px] font-bold text-[#0F172A] mb-3 px-3 tracking-wide">Health Categories</h2>
                     <div className="flex flex-col space-y-0.5">
-                        <SidebarItem icon={PenLine} label="Log Health" to="/log-health" color="text-orange-500" />
-                        <SidebarItem icon={CalendarDays} label="Cycle Monitor" to="/cycle" color="text-pink-500" />
-                        <SidebarItem icon={TrendingUp} label="Progress Analytics" to="/progress" color="text-blue-500" />
-                        <SidebarItem icon={Lightbulb} label="Recommendations" to="/recommendations" color="text-teal-500" />
-                        <SidebarItem icon={Pill} label="Medication" to="/medication" color="text-sky-500" />
-                        <SidebarItem icon={Stethoscope} label="Consult Specialist" to="/specialists" color="text-amber-500" />
-                        <SidebarItem icon={Bot} label="AI Health Assistant" to="/chatbot" color="text-indigo-500" />
+                        {filteredItems.length > 0 ? (
+                            filteredItems.map((item, index) => (
+                                <SidebarItem key={index} icon={item.icon} label={item.label} to={item.to} color={item.color} />
+                            ))
+                        ) : (
+                            <div className="text-[14px] text-gray-500 px-3 py-4 text-center font-medium bg-gray-50/50 rounded-xl border border-gray-100/50">
+                                No categories found.
+                            </div>
+                        )}
                     </div>
                 </div>
             </motion.aside>

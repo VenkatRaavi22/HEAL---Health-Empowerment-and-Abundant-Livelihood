@@ -17,6 +17,59 @@ import {
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 
+// Image map for activities
+const IMAGE_MAP: Record<string, string> = {
+    'Supta Baddha Konasana': '/images/yoga/supta-baddha-konasana.jpeg',
+    'Marjaryasana-Bitilasana': '/images/yoga/Marjariasana-Bitilasana.jpeg',
+    'Marjaryasana': '/images/yoga/cat-cow-pose.jpeg',
+    'Balasana': '/images/yoga/balasana.jpeg',
+    'Surya Namaskar': '/images/yoga/surya-namaskar.jpeg',
+    'Malasana': '/images/yoga/malasana.jpeg',
+    'Setu Bandhasana': '/images/yoga/setu-bandhasana.jpeg',
+    'Adho Mukha Svanasana': '/images/yoga/adho-mukha-svanasana.jpeg',
+    'Dhanurasana': '/images/yoga/dhanurasana.jpeg',
+    'Paschimottanasana': '/images/yoga/paschimottanasana.jpeg',
+    'Tadasana': '/images/yoga/tadasana.jpeg',
+    'Vrikshasana': '/images/yoga/vrikshasana.jpeg',
+    'Ustrasana': '/images/yoga/ustarasana.jpeg',
+    'Viparita Karani': '/images/yoga/viparita-karani.jpeg',
+    'Sarvangasana': '/images/yoga/sarvangasana.jpeg',
+    'Halasana': '/images/yoga/halasana.jpeg',
+    'Matsyasana': '/images/yoga/matsyasana.jpeg',
+    'Cat-Cow': '/images/yoga/cat-cow-pose.jpeg',
+    'Happy Baby Pose': '/images/yoga/happy-baby-pose.jpeg',
+    'Supta Matsyendrasana': '/images/yoga/supta-matsyendrasana.jpeg',
+    'Pigeon Pose': '/images/yoga/pigeon-pose.jpeg',
+    'Brisk Walking': '/images/bezawada/th.jpeg',
+    'Walking': '/images/bezawada/th.jpeg',
+    'Jogging': '/images/exercise/jogging.jpeg',
+    'Swimming': '/images/exercise/swim.jpeg',
+    'Cycling': '/images/exercise/cycling.jpeg',
+    'Pilates': '/images/exercise/pilates.jpeg',
+    'HIIT': '/images/exercise/hiit.jpeg',
+    'Boxing': '/images/exercise/boxing.jpeg',
+    'Zumba': '/images/exercise/zumba.jpeg',
+    'Tai Chi': '/images/exercise/tai-chi.jpeg',
+    'Yoga': '/images/bezawada/Top.jpg',
+    'Water Aerobics': '/images/exercise/water-aerobics.jpeg',
+    'Strength Training': '/images/exercise/strength-training.jpeg',
+    'Running': '/images/exercise/jogging.jpeg',
+    'CrossFit': '/images/exercise/crossfit.jpeg',
+    'Resistance Training': '/images/bezawada/cardio-light-workout.jpg',
+    'Static Stretching': '/images/exercise/static-stretch.jpeg',
+    'Light Resistance': '/images/bezawada/cardio-light-workout.jpg',
+    'Power Yoga': '/images/exercise/power-yoga.jpeg',
+    'Elliptical': '/images/exercise/elliptical.jpg',
+};
+
+function resolveImage(item: any): string | null {
+    if (item.image_url && item.image_url.startsWith('/images/')) return item.image_url;
+    if (IMAGE_MAP[item.title]) return IMAGE_MAP[item.title];
+    if (item.category === 'yoga') return '/images/bezawada/Top.jpg';
+    if (item.category === 'exercise') return '/images/bezawada/cardio-light-workout.jpg';
+    return null;
+}
+
 export default function SessionPage() {
     const location = useLocation();
     const navigate = useNavigate();
@@ -233,6 +286,7 @@ export default function SessionPage() {
 
     const currentActivity = sessionActivities[currentIndex];
     const isNextEnabled = poseStatus === 'correct' || timer === 0;
+    const resolvedImage = currentActivity ? resolveImage(currentActivity) : null;
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col font-sans overflow-hidden">
@@ -260,8 +314,8 @@ export default function SessionPage() {
                     {/* Left: Content Card */}
                     <div className="space-y-6">
                         <div className="relative aspect-video rounded-3xl overflow-hidden shadow-2xl bg-white border-4 border-white group">
-                            {currentActivity.image_url ? (
-                                <img src={currentActivity.image_url} alt={currentActivity.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                            {resolvedImage ? (
+                                <img src={resolvedImage} alt={currentActivity.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400">
                                     <Dumbbell className="w-16 h-16 opacity-10" />
