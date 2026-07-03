@@ -100,17 +100,23 @@ const MENU_ITEMS = [
 ];
 
 // Sidebar Menu Item Component
-function SidebarItem({ icon: Icon, label, to, color }: { icon: any, label: string, to: string, color: string }) {
+function SidebarItem({ icon: Icon, label, to, color, hasAlert }: { icon: any, label: string, to: string, color: string, hasAlert?: boolean }) {
     return (
-        <Link to={to} className="flex items-center gap-3.5 px-3 py-2.5 rounded-[14px] transition-all duration-300 hover:bg-white hover:shadow-[0_4px_12px_rgba(0,0,0,0.04)] group border border-transparent hover:border-gray-100">
-            <Icon className={`w-5 h-5 ${color}`} strokeWidth={2.5} />
-            <span className="text-[15px] font-semibold text-[#0F172A] group-hover:text-[#FA5881] transition-colors">{label}</span>
+        <Link to={to} className="flex items-center justify-between px-3 py-2.5 rounded-[14px] transition-all duration-300 hover:bg-white hover:shadow-[0_4px_12px_rgba(0,0,0,0.04)] group border border-transparent hover:border-gray-100 relative">
+            <div className="flex items-center gap-3.5">
+                <Icon className={`w-5 h-5 ${color}`} strokeWidth={2.5} />
+                <span className="text-[15px] font-semibold text-[#0F172A] group-hover:text-[#FA5881] transition-colors">{label}</span>
+            </div>
+            {hasAlert && (
+                <span className="w-2.5 h-2.5 bg-red-500 rounded-full shadow-[0_0_8px_rgba(239,68,68,0.6)] animate-pulse" title="Restock needed" />
+            )}
         </Link>
     )
 }
 
 export default function Dashboard() {
     const [risks, setRisks] = React.useState<any[]>([]);
+    const [medAlert, setMedAlert] = React.useState(false);
     const [loading, setLoading] = React.useState(true);
     const [userName, setUserName] = React.useState("");
     const [searchTerm, setSearchTerm] = React.useState("");
@@ -129,17 +135,28 @@ export default function Dashboard() {
             }
         } catch(e) {}
 
-        const fetchRisks = async () => {
+        const fetchRisksAndMeds = async () => {
             try {
-                const data = await api("/risk/latest");
-                setRisks(data.riskAnalysis);
+                const [riskData, medData] = await Promise.all([
+                    api("/risk/latest"),
+                    api("/medications").catch(() => []) // gracefully handle error
+                ]);
+                
+                if (riskData && riskData.riskAnalysis) {
+                    setRisks(riskData.riskAnalysis);
+                }
+                
+                if (Array.isArray(medData)) {
+                    const needsRestock = medData.some((med: any) => med.remaining_tablets < 5);
+                    setMedAlert(needsRestock);
+                }
             } catch (err) {
-                console.error("Failed to fetch risks", err);
+                console.error("Failed to fetch data", err);
             } finally {
                 setLoading(false);
             }
         };
-        fetchRisks();
+        fetchRisksAndMeds();
     }, []);
 
     return (
@@ -170,7 +187,14 @@ export default function Dashboard() {
                     <div className="flex flex-col space-y-0.5">
                         {filteredItems.length > 0 ? (
                             filteredItems.map((item, index) => (
-                                <SidebarItem key={index} icon={item.icon} label={item.label} to={item.to} color={item.color} />
+                                <SidebarItem 
+                                    key={index} 
+                                    icon={item.icon} 
+                                    label={item.label} 
+                                    to={item.to} 
+                                    color={item.color} 
+                                    hasAlert={item.label === "Medication" && medAlert}
+                                />
                             ))
                         ) : (
                             <div className="text-[14px] text-gray-500 px-3 py-4 text-center font-medium bg-gray-50/50 rounded-xl border border-gray-100/50">

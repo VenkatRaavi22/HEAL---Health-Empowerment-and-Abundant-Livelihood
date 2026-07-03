@@ -1,16 +1,29 @@
 const db = require("../config/db");
 
-// Get all medications for a user
 const getMedications = (req, res) => {
     const userId = req.user.id;
-    const query = "SELECT * FROM medications WHERE user_id = ?";
+    
+    // Auto-decrement remaining tablets based on days passed
+    const updateQuery = `
+        UPDATE medications 
+        SET remaining_tablets = GREATEST(0, remaining_tablets - DATEDIFF(CURRENT_DATE, last_processed_date)),
+            last_processed_date = CURRENT_DATE
+        WHERE user_id = ? AND last_processed_date < CURRENT_DATE
+    `;
 
-    db.query(query, [userId], (err, results) => {
-        if (err) {
-            console.error("Error fetching medications:", err);
-            return res.status(500).json({ message: "Internal server error" });
+    db.query(updateQuery, [userId], (updateErr) => {
+        if (updateErr) {
+            console.error("Error auto-updating medications:", updateErr);
         }
-        res.status(200).json(results);
+
+        const query = "SELECT * FROM medications WHERE user_id = ?";
+        db.query(query, [userId], (err, results) => {
+            if (err) {
+                console.error("Error fetching medications:", err);
+                return res.status(500).json({ message: "Internal server error" });
+            }
+            res.status(200).json(results);
+        });
     });
 };
 
@@ -46,7 +59,7 @@ const updateMedication = (req, res) => {
         return res.status(400).json({ message: "Medication name is required" });
     }
 
-    const query = "UPDATE medications SET medicine_name = ?, dosage = ?, time = ?, remaining_tablets = ?, total_tablets = ? WHERE med_id = ? AND user_id = ?";
+    const query = "UPDATE medications SET medicine_name = ?, dosage = ?, time = ?, remaining_tablets = ?, total_tablets = ?, last_processed_date = CURRENT_DATE WHERE med_id = ? AND user_id = ?";
     const values = [name, dosage, time, remaining_tablets, total_tablets, medicationId, userId];
 
     db.query(query, values, (err, result) => {

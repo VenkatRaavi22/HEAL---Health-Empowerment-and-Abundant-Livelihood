@@ -59,6 +59,9 @@ CREATE TABLE IF NOT EXISTS health_logs (
     stress_level INT,
     weight FLOAT,
     step_count INT,
+    flow_intensity VARCHAR(50),
+    pain_level VARCHAR(50),
+    physical_markers VARCHAR(255),
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
@@ -80,6 +83,7 @@ CREATE TABLE IF NOT EXISTS medications (
     time TIME,
     total_tablets INT,
     remaining_tablets INT,
+    last_processed_date DATE DEFAULT (CURRENT_DATE),
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
@@ -92,6 +96,16 @@ CREATE TABLE IF NOT EXISTS recommendations (
     description TEXT,
     image_url VARCHAR(255),
     FOREIGN KEY (disease_id) REFERENCES diseases(disease_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- TABLE 10: period_history
+CREATE TABLE IF NOT EXISTS period_history (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE,
+    cycle_length INT,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- SEED DATA
