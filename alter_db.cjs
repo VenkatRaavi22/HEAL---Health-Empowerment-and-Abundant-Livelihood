@@ -19,7 +19,7 @@ db.connect((err) => {
         ALTER TABLE medications 
         ADD COLUMN last_processed_date DATE DEFAULT (CURRENT_DATE);
     `;
-    db.query(query, (err, results) => {
+    db.query(query, (err) => {
         if (err) {
             // It might already exist, handle gracefully
             if (err.code === 'ER_DUP_FIELDNAME') {

@@ -12,6 +12,15 @@ exports.register = async (req, res) => {
         return res.status(400).json({ message: "Please enter all fields" });
     }
 
+    if (name.length > 100) {
+        return res.status(400).json({ message: "Name cannot exceed 100 characters." });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        return res.status(400).json({ message: "Invalid Email" });
+    }
+
     try {
         // Check if user exists
         const [rows] = await db.promise().query("SELECT * FROM users WHERE email = ?", [email]);

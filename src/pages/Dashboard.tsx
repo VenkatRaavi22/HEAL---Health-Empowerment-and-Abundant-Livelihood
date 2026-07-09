@@ -117,6 +117,7 @@ function SidebarItem({ icon: Icon, label, to, color, hasAlert }: { icon: any, la
 export default function Dashboard() {
     const [risks, setRisks] = React.useState<any[]>([]);
     const [medAlert, setMedAlert] = React.useState(false);
+    const [nextMed, setNextMed] = React.useState<any>(null);
     const [loading, setLoading] = React.useState(true);
     const [userName, setUserName] = React.useState("");
     const [searchTerm, setSearchTerm] = React.useState("");
@@ -149,6 +150,9 @@ export default function Dashboard() {
                 if (Array.isArray(medData)) {
                     const needsRestock = medData.some((med: any) => med.remaining_tablets < 5);
                     setMedAlert(needsRestock);
+                    if (medData.length > 0) {
+                        setNextMed(medData[0]);
+                    }
                 }
             } catch (err) {
                 console.error("Failed to fetch data", err);
@@ -253,10 +257,10 @@ export default function Dashboard() {
                         <motion.div variants={fadeUpVariants}>
                             <StatCard
                                 title="Next Med"
-                                value="2:00 PM"
+                                value={nextMed ? nextMed.time.substring(0, 5) : "--:--"}
                                 icon={Pill}
                                 color="primary"
-                                trend="Metformin (500mg)"
+                                trend={nextMed ? nextMed.medicine_name : "No meds scheduled"}
                                 trendUp={true} 
                             />
                         </motion.div>

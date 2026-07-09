@@ -14,6 +14,7 @@ export default function Setup() {
         cycleLength: '',
         lastPeriod: '',
         condition: 'None',
+        thyroidType: 'Hyperthyroidism (Overactive)',
         medication: ''
     });
     const [error, setError] = useState('');
@@ -25,6 +26,12 @@ export default function Setup() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+
+        let finalCondition = formData.condition;
+        if (formData.condition === 'Thyroid') {
+            finalCondition = `Thyroid - ${formData.thyroidType}`;
+        }
+
         try {
             await api("/profile/setup", {
                 method: "POST",
@@ -34,7 +41,8 @@ export default function Setup() {
                     weight: parseInt(formData.weight),
                     cycle_length: parseInt(formData.cycleLength),
                     last_period_date: formData.lastPeriod,
-                    known_condition: formData.condition
+                    known_condition: finalCondition,
+                    medication: formData.medication
                 }),
             });
 
@@ -118,9 +126,27 @@ export default function Setup() {
                             <option value="PCOS">PCOS</option>
                             <option value="Thyroid">Thyroid</option>
                             <option value="Endometriosis">Endometriosis</option>
+                            <option value="Premenstrual Dysphoric Disorder (PMDD)">Premenstrual Dysphoric Disorder (PMDD)</option>
+                            <option value="Cortisol / Stress Imbalances">Cortisol / Stress Imbalances</option>
+                            <option value="Insulin Resistance">Insulin Resistance</option>
                             <option value="Other">Other</option>
                         </select>
                     </div>
+
+                    {formData.condition === 'Thyroid' && (
+                        <div className="flex flex-col gap-1.5 animate-fade-in">
+                            <label className="text-sm font-medium text-gray-700 ml-1">Thyroid Type</label>
+                            <select
+                                name="thyroidType"
+                                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all bg-gray-50/50 focus:bg-white"
+                                value={formData.thyroidType}
+                                onChange={handleChange}
+                            >
+                                <option value="Hyperthyroidism (Overactive)">Hyperthyroidism (Overactive)</option>
+                                <option value="Hypothyroidism (Underactive)">Hypothyroidism (Underactive)</option>
+                            </select>
+                        </div>
+                    )}
 
                     <Input
                         label="Current Medication (Optional)"

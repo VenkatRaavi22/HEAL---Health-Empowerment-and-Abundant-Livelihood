@@ -41,10 +41,16 @@ exports.getRecommendationsByDisease = async (req, res) => {
             riskLevel = "moderate";
         }
 
+        let normalizedDiseaseName = diseaseName;
+        const dn = diseaseName.toLowerCase();
+        if (dn === "pcod" || dn === "pcos" || dn.includes("polycystic")) {
+            normalizedDiseaseName = "PCOS";
+        }
+
         // 5. Fetch recommendations filtered by disease and risk_level
         const [recoRows] = await db.promise().query(
             "SELECT category, title, description, image_url FROM recommendations WHERE disease_name = ? AND risk_level = ?",
-            [diseaseName, riskLevel]
+            [normalizedDiseaseName, riskLevel]
         );
 
         // 6. Group recommendations by category and introduce a daily cyclic selection

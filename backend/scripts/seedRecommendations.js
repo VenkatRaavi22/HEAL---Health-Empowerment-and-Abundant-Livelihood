@@ -68,7 +68,7 @@ async function run() {
         try {
             await db.promise().query("ALTER TABLE recommendations MODIFY COLUMN disease_id INT NULL DEFAULT NULL");
             console.log("Made disease_id nullable");
-        } catch (e) { /* already nullable */ }
+        } catch { /* already nullable */ }
 
         // 5. Clear existing data
         await db.promise().query("DELETE FROM recommendations");

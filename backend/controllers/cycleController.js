@@ -2,36 +2,83 @@ const db = require("../config/db");
 
 // Helper to calculate cycle details
 const calculateCycle = (profile, history) => {
-    let cycleLength = 28;
-    if (history && history.length > 0) {
+    let cycleLength = 28; // Default to 28 days for new users
+    if (history && history.length >= 3) {
         const lengths = history.map(h => h.cycle_length).filter(l => l > 0);
-        if (lengths.length > 0) {
-            cycleLength = Math.round(lengths.reduce((a, b) => a + b, 0) / lengths.length);
-        } else if (profile.cycle_length) {
+        if (lengths.length >= 3) {
+            // Anomaly filtering: If it happens just once (>35 days), minimize its impact
+            const longCycles = lengths.filter(l => l > 35);
+            let validLengths = lengths;
+            if (longCycles.length === 1) {
+                validLengths = lengths.filter(l => l <= 35);
+            }
+            if (validLengths.length > 0) {
+                // Rolling average of the available cycles (up to 12)
+                cycleLength = Math.round(validLengths.reduce((a, b) => a + b, 0) / validLengths.length);
+            } else {
+                cycleLength = Math.round(lengths.reduce((a, b) => a + b, 0) / lengths.length);
+            }
+        } else if (profile && profile.cycle_length) {
             cycleLength = profile.cycle_length;
         }
-    } else if (profile && profile.cycle_length) {
-        cycleLength = profile.cycle_length;
+    } else if (profile && profile.cycle_length && (!history || history.length < 3)) {
+        // According to instructions, default to 28-day standard until 3 cycles are logged. 
+        // But if they provided one, we might use it. The prompt specifically said:
+        // "For a brand new user, Flo defaults to standard clinical averages: LMP + 28 days... 
+        // Once you have logged data for at least 3 cycles, Flo switches... to a personalized rolling average"
+        cycleLength = 28;
     }
+
+    // Clamp cycle length to average 21-35 days as per medical guidelines
+    cycleLength = Math.max(21, Math.min(35, cycleLength));
+
 
     const today = new Date();
     // Start of current cycle. If we have a history record for current ongoing period, use that.
     // Otherwise use last_period_date from profile
     let lastPeriodStart = profile && profile.last_period_date ? new Date(profile.last_period_date) : today;
 
-    // Fast forward to the most recent cycle start if it's way in the past
-    while (true) {
-        let nextPeriodDate = new Date(lastPeriodStart);
-        nextPeriodDate.setDate(nextPeriodDate.getDate() + cycleLength);
-        if (nextPeriodDate <= today) {
-            lastPeriodStart = nextPeriodDate;
-        } else {
-            break;
-        }
+    let predictedPeriodDate = new Date(lastPeriodStart);
+    predictedPeriodDate.setDate(predictedPeriodDate.getDate() + cycleLength);
+
+    const diffRaw = today.getTime() - predictedPeriodDate.getTime();
+    const daysDelayedRaw = Math.floor(diffRaw / (1000 * 60 * 60 * 24));
+    
+    let isDelayed = false;
+    let delayDays = 0;
+
+    if (daysDelayedRaw > 2) { // 2-day buffer window
+        isDelayed = true;
+        delayDays = daysDelayedRaw;
     }
+
 
     const diffTime = today.getTime() - lastPeriodStart.getTime();
     const cycleDay = Math.max(1, Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1);
+
+    let needsConsultation = false;
+    let consultationReason = null;
+    let fertileWindowFrozen = false;
+
+    if (delayDays > 35) {
+        fertileWindowFrozen = true;
+    }
+
+    if (cycleDay > 90) {
+        needsConsultation = true;
+        consultationReason = "You completely missed your period for 3 consecutive months (secondary amenorrhea). Please consult a healthcare provider.";
+    } else if (cycleDay > 32) {
+        needsConsultation = true;
+        consultationReason = "Your current cycle is longer than 32 days. If accompanied by sudden weight changes, severe acne, or unusual facial hair growth, please consult a healthcare provider.";
+    }
+
+    if (history && history.length > 0) {
+        const consistentlyLong = history.filter(h => h.cycle_length > 35);
+        if (consistentlyLong.length >= 2) {
+            needsConsultation = true;
+            consultationReason = "Your cycles are consistently longer than 35 days. Please consult a healthcare provider.";
+        }
+    }
 
     // Phases
     // Menstrual: Days 1-5 (approx)
@@ -46,10 +93,12 @@ const calculateCycle = (profile, history) => {
     let phase = 'Luteal';
     if (cycleDay <= menstrualDays) {
         phase = 'Menstrual';
-    } else if (cycleDay < ovulationDay - 5) {
+    } else if (cycleDay < ovulationDay - 5 && !fertileWindowFrozen) {
         phase = 'Follicular';
-    } else if (cycleDay >= ovulationDay - 5 && cycleDay <= ovulationDay) {
+    } else if (cycleDay >= ovulationDay - 5 && cycleDay <= ovulationDay && !fertileWindowFrozen) {
         phase = 'Ovulation';
+    } else if (fertileWindowFrozen) {
+        phase = 'Delayed';
     } else {
         phase = 'Luteal';
     }
@@ -59,7 +108,13 @@ const calculateCycle = (profile, history) => {
         cycleLength,
         phase,
         lastPeriodStart: lastPeriodStart.toISOString().slice(0, 10),
-        ovulationDay
+        ovulationDay,
+        isDelayed,
+        delayDays,
+        fertileWindowFrozen,
+        needsConsultation,
+        consultationReason,
+        predictedPeriodDate: predictedPeriodDate.toISOString().slice(0, 10)
     };
 };
 
@@ -70,11 +125,16 @@ exports.getStatus = async (req, res) => {
         const profile = profileRes[0] || {};
         
         const [history] = await db.promise().query(
-            "SELECT * FROM period_history WHERE user_id = ? ORDER BY start_date DESC LIMIT 6",
+            "SELECT * FROM period_history WHERE user_id = ? ORDER BY start_date DESC LIMIT 12",
             [userId]
         );
 
         const cycleData = calculateCycle(profile, history);
+        cycleData.history = history.map(h => ({
+            ...h,
+            start_date: new Date(h.start_date).toISOString().slice(0, 10),
+            end_date: h.end_date ? new Date(h.end_date).toISOString().slice(0, 10) : null
+        }));
 
         res.json(cycleData);
     } catch (err) {

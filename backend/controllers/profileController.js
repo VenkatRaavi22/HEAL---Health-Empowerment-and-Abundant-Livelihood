@@ -5,7 +5,7 @@ const db = require("../config/db");
 // @access  Private
 exports.setupProfile = async (req, res) => {
     const userId = req.user.id;
-    const { age, height, weight, cycle_length, last_period_date, known_condition } = req.body;
+    const { age, height, weight, cycle_length, last_period_date, known_condition, medication } = req.body;
 
     try {
         // 1. Check if profile exists
@@ -28,6 +28,14 @@ exports.setupProfile = async (req, res) => {
                 `INSERT INTO user_profile (user_id, age, height, weight, cycle_length, last_period_date, known_condition) 
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
                 [userId, age, height, weight, cycle_length, last_period_date, known_condition]
+            );
+        }
+
+        // Insert medication if provided
+        if (medication && medication.trim() !== '') {
+            await db.promise().query(
+                "INSERT INTO medications (user_id, medicine_name, dosage, time, remaining_tablets, total_tablets) VALUES (?, ?, '1 dose', '08:00', 30, 30)",
+                [userId, medication.trim()]
             );
         }
 

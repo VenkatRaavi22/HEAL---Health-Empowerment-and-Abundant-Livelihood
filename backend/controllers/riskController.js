@@ -15,9 +15,12 @@ exports.getLatestRisk = async (req, res) => {
         );
 
         if (logRows.length === 0) {
-            // If no logs found, calculate 0% risk for all diseases
+            // If no logs found, calculate risk based purely on known condition profile
             const risks = await calculateRisk([], userId, null);
-            return res.json({ riskAnalysis: risks.slice(0, 3) });
+            const topRisks = risks
+                .sort((a, b) => b.riskPercentage - a.riskPercentage)
+                .slice(0, 3);
+            return res.json({ riskAnalysis: topRisks });
         }
 
         const latestLog = logRows[0];

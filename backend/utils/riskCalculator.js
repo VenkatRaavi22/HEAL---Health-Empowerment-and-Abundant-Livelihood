@@ -2,8 +2,8 @@ const db = require("../config/db");
 
 // Data-driven approach uses dynamic max_score per disease from DB
 // Base risk (%) granted simply for having a known condition selected in Setup
-// Reduced to 0 so the risk can be highly dynamic and fall to 'Low' if no symptoms are logged.
-const BASE_RISK_FOR_KNOWN_CONDITION = 0;
+// Increased to 10 so it ranks higher than 0% diseases when no symptoms are logged.
+const BASE_RISK_FOR_KNOWN_CONDITION = 10;
 
 /**
  * Clamps a value to [0, 100] and rounds it.
@@ -142,7 +142,7 @@ const calculateRisk = async (symptomIds, userId = null, logData = null) => {
             // Add a slight penalty for cycle irregularity for reproductive conditions
             const cyclePenalty = (isCycleIrregular && (diseaseName.includes("pcos") || diseaseName.includes("pcod") || diseaseName.includes("endometriosis"))) ? 15 : 0;
             
-            symptomRisk = (rawRatio * 100);
+            let symptomRisk = (rawRatio * 100);
             symptomRisk = Math.min(symptomRisk + cyclePenalty, 100);
 
             // Apply lifestyle penalty
