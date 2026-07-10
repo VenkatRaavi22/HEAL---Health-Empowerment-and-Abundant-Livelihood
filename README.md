@@ -195,12 +195,6 @@ MySQL Database
 
 ---
 
-# Screenshots
-
-*(Add screenshots of your Login, Dashboard, Cycle Tracking, Chat Assistant (if retained), and Recommendation pages here.)*
-
----
-
 # Installation
 
 ## Clone
