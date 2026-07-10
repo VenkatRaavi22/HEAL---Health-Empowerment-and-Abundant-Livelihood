@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Bot, Send, Sparkles, RotateCcw } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import api from '../utils/api';
 
 interface Message {
@@ -24,22 +26,6 @@ const WELCOME_MESSAGE: Message = {
     text: `Hi there! 🌸 I'm **HEAL's AI Health Assistant**.\n\nI'm here to help you understand your hormonal health, interpret your risk scores, and guide you with personalized tips on diet, yoga, ayurveda, and more.\n\nWhat would you like to know today?`,
     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
 };
-
-// Render markdown-style bold **text** and line breaks
-function renderText(text: string) {
-    const lines = text.split('\n');
-    return lines.map((line, i) => {
-        const parts = line.split(/\*\*(.*?)\*\*/g);
-        return (
-            <span key={i}>
-                {parts.map((part, j) =>
-                    j % 2 === 1 ? <strong key={j}>{part}</strong> : part
-                )}
-                {i < lines.length - 1 && <br />}
-            </span>
-        );
-    });
-}
 
 export default function Chatbot() {
     const [messages, setMessages] = useState<Message[]>([WELCOME_MESSAGE]);
@@ -78,13 +64,13 @@ export default function Chatbot() {
             };
             setMessages(prev => [...prev, botMsg]);
             setNextId(prev => prev + 2);
-        } catch (err) {
+        } catch (err: any) {
             setMessages(prev => [
                 ...prev,
                 {
                     id: nextId + 1,
                     role: 'assistant',
-                    text: "I'm having trouble connecting right now. Please try again in a moment. 🙏",
+                    text: `Error: ${err.message || "I'm having trouble connecting right now. Please try again in a moment. 🙏"}`,
                     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 },
             ]);
@@ -146,9 +132,11 @@ export default function Chatbot() {
                                 className={`px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-sm ${msg.role === 'user'
                                     ? 'bg-gradient-to-br from-primary to-secondary text-white rounded-tr-md'
                                     : 'bg-white text-gray-800 rounded-tl-md border border-gray-100'
-                                    }`}
+                                    } prose prose-sm max-w-none`}
                             >
-                                {renderText(msg.text)}
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                    {msg.text}
+                                </ReactMarkdown>
                             </div>
                             <span className="text-[10px] text-gray-400 px-1">{msg.timestamp}</span>
                         </div>
