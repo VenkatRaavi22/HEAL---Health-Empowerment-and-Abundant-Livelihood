@@ -1,4 +1,4 @@
-# 🌸 HEAL – Women's Hormonal Health Monitoring Platform
+# HEAL – Women's Hormonal Health Monitoring Platform
 
 HEAL is a full-stack web application designed to help women monitor their menstrual health, track symptoms, identify potential health risks, and receive personalized wellness recommendations.
 
